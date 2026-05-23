@@ -27,7 +27,7 @@
       border-radius: 2rem;
       padding: 2rem;
       border: 2px solid #e91e63;
-      max-width: 700px;
+      max-width: 750px;
       width: 100%;
       box-shadow: 0 0 50px rgba(233, 30, 99, 0.3);
     }
@@ -47,8 +47,8 @@
 
     .pin-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.2rem;
       margin: 2rem 0;
     }
 
@@ -59,6 +59,26 @@
       text-align: center;
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pin-card::before {
+      content: '🔐';
+      position: absolute;
+      top: 5px;
+      left: 10px;
+      font-size: 1.2rem;
+      opacity: 0.3;
+    }
+
+    .pin-card::after {
+      content: '🔐';
+      position: absolute;
+      bottom: 5px;
+      right: 10px;
+      font-size: 1.2rem;
+      opacity: 0.3;
     }
 
     .pin-card:hover {
@@ -67,33 +87,39 @@
     }
 
     .pin-number {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
       font-weight: bold;
-      font-family: monospace;
-      letter-spacing: 2px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 4px;
       color: white;
+      text-shadow: 0 0 5px rgba(0,0,0,0.3);
+      margin: 0.5rem 0;
     }
 
     .pin-label {
       font-size: 0.7rem;
-      color: rgba(255,255,255,0.8);
+      color: rgba(255,255,255,0.9);
       margin-top: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .copy-btn {
-      background: rgba(255,255,255,0.2);
-      border: none;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.3);
       color: white;
-      padding: 0.3rem 0.8rem;
+      padding: 0.4rem 1rem;
       border-radius: 2rem;
-      margin-top: 0.5rem;
+      margin-top: 0.8rem;
       cursor: pointer;
       font-size: 0.7rem;
       transition: 0.2s;
+      font-weight: bold;
     }
 
     .copy-btn:hover {
       background: rgba(255,255,255,0.4);
+      transform: scale(1.02);
     }
 
     .instructions {
@@ -121,10 +147,12 @@
       text-decoration: none;
       text-align: center;
       width: 100%;
+      transition: 0.2s;
     }
 
     .back-link:hover {
       text-decoration: underline;
+      color: #ff6b9d;
     }
 
     .status {
@@ -132,6 +160,7 @@
       margin-top: 1rem;
       color: #4caf50;
       font-size: 0.8rem;
+      font-weight: bold;
     }
 
     .info-box {
@@ -147,6 +176,42 @@
       color: #4caf50;
       font-size: 0.8rem;
     }
+
+    /* Badge for PIN length */
+    .pin-badge {
+      display: inline-block;
+      background: rgba(0,0,0,0.5);
+      padding: 0.2rem 0.5rem;
+      border-radius: 2rem;
+      font-size: 0.6rem;
+      margin-top: 0.3rem;
+      font-family: monospace;
+    }
+
+    /* Responsive */
+    @media (max-width: 550px) {
+      .admin-container {
+        padding: 1.5rem;
+      }
+      .pin-number {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+      }
+      .pin-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+
+    /* Animation for copy feedback */
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.98); }
+    }
+
+    .pin-card:active {
+      animation: pulse 0.2s ease;
+    }
   </style>
 </head>
 <body>
@@ -158,7 +223,7 @@
       <h3>📋 How to Use:</h3>
       <p>1. Click on any PIN card to copy it to clipboard</p>
       <p>2. Share this PIN with anyone you want to grant access</p>
-      <p>3. These 5 PINs work FOREVER on ANY browser/device</p>
+      <p>3. These <strong>6-digit PINs</strong> work FOREVER on ANY browser/device</p>
       <p>4. No expiry - valid anytime, anywhere</p>
     </div>
 
@@ -189,10 +254,11 @@
       if (!grid) return;
       
       grid.innerHTML = PERMANENT_PINS.map(pin => `
-        <div class="pin-card" data-pin="${pin}">
+        <div class="pin-card" data-pin="${pin}" onclick="copyPin('${pin}')">
           <div class="pin-number">${pin}</div>
           <div class="pin-label">PERMANENT ACCESS PIN</div>
-          <button class="copy-btn" onclick="copyPin('${pin}')">📋 Copy</button>
+          <div class="pin-badge">6-digit code</div>
+          <button class="copy-btn" onclick="event.stopPropagation(); copyPin('${pin}')">📋 Copy PIN</button>
         </div>
       `).join('');
     }
@@ -201,7 +267,7 @@
       navigator.clipboard.writeText(pin).then(() => {
         const status = document.getElementById('statusMsg');
         if (status) {
-          status.innerHTML = `✅ PIN ${pin} copied to clipboard! Share it with anyone.`;
+          status.innerHTML = `✅ 6-digit PIN ${pin} copied to clipboard! Share it with anyone.`;
           status.style.color = '#4caf50';
           setTimeout(() => {
             status.innerHTML = '';
@@ -218,9 +284,9 @@
 
     function initAdmin() {
       renderPins();
-      console.log('%c🔑 ADMIN PANEL - PERMANENT PINS:', 'color: #e91e63; font-size: 16px; font-weight: bold;');
+      console.log('%c🔑 ADMIN PANEL - PERMANENT 6-DIGIT PINS:', 'color: #e91e63; font-size: 16px; font-weight: bold;');
       console.log('%c' + PERMANENT_PINS.join(' | '), 'color: #4caf50; font-size: 14px; font-family: monospace;');
-      console.log('%c✅ These PINs work forever on ANY browser/device', 'color: #2196f3; font-size: 12px;');
+      console.log('%c✅ These 6-digit PINs work forever on ANY browser/device', 'color: #2196f3; font-size: 12px;');
     }
 
     initAdmin();
