@@ -1,94 +1,26 @@
 /* ═══════════════════════════════════════════════════════════
    THIS OR THAT · Premium Romantic Game · script.js
-   WITH CROSS-BROWSER PIN SYSTEM (Valid for 1 hour)
+   WITH STATIC PERMANENT 6-DIGIT PINS
    ═══════════════════════════════════════════════════════════ */
 
 "use strict";
 
 /* ═══════════════════════════════════════════════════════════
-   SECTION 1: PIN SECURITY SYSTEM (Cross-Browser Compatible)
+   SECTION 1: STATIC PERMANENT PINS (6 digits, work forever)
    ═══════════════════════════════════════════════════════════ */
 
-// Storage key for cross-browser PINs
-const PIN_STORAGE_KEY = 'global_game_pins';
+// These 5 permanent PINs work on ANY browser/device, ANYTIME
+// Share these with authorized users only
+const PERMANENT_PINS = [
+  "284759",
+  "593682",
+  "718246",
+  "369581",
+  "841763"
+];
 
-/**
- * Generates 10 random 4-digit secure PINs
- * Avoids sequential numbers (1234), repeating numbers (1111), and years (1990-2025)
- * @returns {Array} Array of 10 unique PINs
- */
-function generateSecurePins() {
-  const pins = new Set();
-  while (pins.size < 10) {
-    let pin = Math.floor(1000 + Math.random() * 9000);
-    const pinStr = pin.toString();
-    const isSequential = pinStr === "1234" || pinStr === "4321" || pinStr === "5678" || pinStr === "9876";
-    const isRepeating = /^(\d)\1{3}$/.test(pinStr);
-    const isYear = (pin >= 1900 && pin <= 2025);
-    if (!isSequential && !isRepeating && !isYear) {
-      pins.add(pin);
-    }
-  }
-  return Array.from(pins);
-}
-
-/**
- * Loads valid PINs from localStorage (set by admin.html)
- * PINs are cross-browser compatible and expire after 1 hour
- * @returns {Array} Array of valid access PINs
- */
-function loadValidPins() {
-  const stored = localStorage.getItem(PIN_STORAGE_KEY);
-  
-  if (stored) {
-    try {
-      const pinData = JSON.parse(stored);
-      
-      if (pinData.pins && pinData.pins.length > 0) {
-        const now = Date.now();
-        const expiryTime = pinData.expiry;
-        
-        if (now < expiryTime) {
-          console.log(`%c✅ PINs loaded - Valid until: ${new Date(expiryTime).toLocaleTimeString()}`, 'color: #4caf50; font-size: 12px;');
-          return pinData.pins;
-        } else {
-          console.log('%c⚠️ PINs expired - Please generate new ones from admin panel', 'color: #ff9800; font-size: 12px;');
-          localStorage.removeItem(PIN_STORAGE_KEY);
-        }
-      }
-    } catch (e) {
-      console.error('Error loading PINs:', e);
-    }
-  }
-  
-  // If no valid PINs found, generate fallback PINs
-  const fallbackPins = [2847, 5936, 7182, 3695, 8417, 6253, 4791, 9362, 1578, 6429];
-  console.log('%c⚠️ Using fallback PINs - Please use admin panel to generate official PINs', 'color: #ff9800; font-size: 12px;');
-  return fallbackPins;
-}
-
-// Initialize authorized PINs from storage
-let AUTHORIZED_PINS = loadValidPins();
-
-/**
- * Checks and refreshes PINs if needed
- * Runs periodically to ensure PINs are up to date
- */
-function refreshPINsIfNeeded() {
-  const stored = localStorage.getItem(PIN_STORAGE_KEY);
-  if (stored) {
-    try {
-      const pinData = JSON.parse(stored);
-      if (pinData.pins && pinData.pins.length > 0 && Date.now() < pinData.expiry) {
-        AUTHORIZED_PINS = pinData.pins;
-        console.log('%c🔄 PINs refreshed from storage', 'color: #2196f3; font-size: 12px;');
-      }
-    } catch (e) {}
-  }
-}
-
-// Check for PIN updates every 30 seconds
-setInterval(refreshPINsIfNeeded, 30000);
+// Initialize authorized PINs
+let AUTHORIZED_PINS = PERMANENT_PINS;
 
 /* ═══════════════════════════════════════════════════════════
    SECTION 2: 30 ROMANTIC QUESTIONS WITH IMAGES
@@ -522,7 +454,7 @@ function initPinSystem() {
   adminHint.style.borderRadius = '0.5rem';
   adminHint.style.fontSize = '0.7rem';
   adminHint.style.textAlign = 'center';
-  adminHint.innerHTML = '💡 <strong>Need a PIN?</strong> Contact the admin to get a valid access PIN. PINs work on ANY browser/device for 1 hour.';
+  adminHint.innerHTML = '💡 <strong>Need a PIN?</strong> Contact the admin or go to <strong>/admin.html</strong> to get valid access PINs.';
   
   const modalGlass = dom.pinModal.querySelector('.modal-glass');
   if (modalGlass && !modalGlass.querySelector('.admin-hint')) {
@@ -530,34 +462,10 @@ function initPinSystem() {
     modalGlass.appendChild(adminHint);
   }
   
-  // Check expiry and show warning
-  const stored = localStorage.getItem(PIN_STORAGE_KEY);
-  if (stored) {
-    try {
-      const pinData = JSON.parse(stored);
-      const remaining = pinData.expiry - Date.now();
-      if (remaining < 600000 && remaining > 0) {
-        const minutesLeft = Math.ceil(remaining / 60000);
-        const expiryWarning = document.createElement('div');
-        expiryWarning.style.marginTop = '0.5rem';
-        expiryWarning.style.padding = '0.3rem';
-        expiryWarning.style.background = 'rgba(255, 152, 0, 0.2)';
-        expiryWarning.style.borderRadius = '0.5rem';
-        expiryWarning.style.fontSize = '0.7rem';
-        expiryWarning.style.textAlign = 'center';
-        expiryWarning.style.color = '#ff9800';
-        expiryWarning.innerHTML = `⚠️ Current PINs expire in ${minutesLeft} minute(s)`;
-        if (modalGlass && !modalGlass.querySelector('.expiry-warning')) {
-          expiryWarning.className = 'expiry-warning';
-          modalGlass.appendChild(expiryWarning);
-        }
-      }
-    } catch (e) {}
-  }
-  
-  // Log valid PINs to console
-  console.log("%c🔑 VALID ACCESS PINS (Cross-Browser Compatible):", "color: #e91e63; font-size: 16px; font-weight: bold;");
+  // Log valid PINs to console for developer access
+  console.log("%c🔑 VALID ACCESS PINS (Permanent):", "color: #e91e63; font-size: 16px; font-weight: bold;");
   console.log("%c" + AUTHORIZED_PINS.join(" | "), "color: #4caf50; font-size: 14px; font-family: monospace;");
+  console.log("%c✅ These 6-digit PINs work on ANY browser/device, FOREVER", "color: #2196f3; font-size: 12px;");
   
   if (dom.pinSubmitBtn) {
     dom.pinSubmitBtn.addEventListener("click", verifyPin);
@@ -574,15 +482,13 @@ function initPinSystem() {
 function verifyPin() {
   const enteredPin = dom.pinInput ? dom.pinInput.value.trim() : "";
   
-  if (enteredPin.length !== 4 || !/^\d+$/.test(enteredPin)) {
-    if (dom.pinError) dom.pinError.textContent = "❌ Please enter a valid 4-digit PIN";
+  if (enteredPin.length !== 6 || !/^\d+$/.test(enteredPin)) {
+    if (dom.pinError) dom.pinError.textContent = "❌ Please enter a valid 6-digit PIN";
     if (dom.pinInput) dom.pinInput.value = "";
     return;
   }
   
-  const pinNum = parseInt(enteredPin, 10);
-  
-  if (AUTHORIZED_PINS.includes(pinNum)) {
+  if (AUTHORIZED_PINS.includes(enteredPin)) {
     state.isAuthenticated = true;
     sessionStorage.setItem("tot_auth", "true");
     
@@ -595,7 +501,7 @@ function verifyPin() {
     
     playSfx(dom.sfxClick);
     if (dom.pinError) dom.pinError.textContent = "";
-    console.log(`%c✅ Access granted with PIN: ${pinNum}`, 'color: #4caf50; font-size: 12px;');
+    console.log(`%c✅ Access granted with PIN: ${enteredPin}`, 'color: #4caf50; font-size: 12px;');
   } else {
     if (dom.pinError) dom.pinError.textContent = "❌ Invalid PIN. Access denied.";
     if (dom.pinInput) {
