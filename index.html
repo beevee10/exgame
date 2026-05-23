@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="This or That – the premium romantic relationship game. Discover your preferences and share with your special someone." />
+  <meta name="theme-color" content="#1a0a1e" />
+  <title>This or That 💋 – The Relationship Game</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-theme="dark">
+
+  <!-- ─── AGE CONFIRMATION MODAL ─────────────────────────── -->
+  <div id="ageModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ageModalTitle">
+    <div class="modal-glass">
+      <div class="modal-icon">🔞</div>
+      <h2 id="ageModalTitle">Adults Only</h2>
+      <p>This game contains romantic and suggestive content intended for adults.<br/>Are you 18 years or older?</p>
+      <div class="modal-actions">
+        <button class="btn-glow" id="ageYes">Yes, I'm 18+</button>
+        <button class="btn-outline-soft" id="ageNo">No, Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PARTICLES CANVAS ─────────────────────────────── -->
+  <canvas id="particles"></canvas>
+
+  <!-- ─── TOP BAR ──────────────────────────────────────── -->
+  <header class="topbar" id="topbar">
+    <div class="topbar-brand">
+      <span class="brand-heart">♥</span>
+      <span class="brand-name">This or That</span>
+    </div>
+    <div class="topbar-controls">
+      <button class="icon-btn" id="musicToggle" title="Toggle Music" aria-label="Toggle background music">
+        <i class="fas fa-music"></i>
+      </button>
+      <button class="icon-btn" id="themeToggle" title="Toggle Theme" aria-label="Toggle dark/light mode">
+        <i class="fas fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── LANDING PAGE ─────────────────────────────────── -->
+  <section id="landingPage" class="page active">
+    <div class="landing-center">
+      <div class="landing-badge">✨ Just for Fun</div>
+      <h1 class="landing-title">
+        <span class="title-line">This</span>
+        <span class="title-or">or</span>
+        <span class="title-line">That</span>
+      </h1>
+      <p class="landing-subtitle">
+        Let's just kill time and Discover your deepest romantic preferences.<br/>
+        30 serious questions. Zero judgment.
+      </p>
+
+      <div class="name-input-wrap">
+        <div class="input-glass">
+          <i class="fas fa-user input-icon"></i>
+          <input
+            type="text"
+            id="playerName"
+            class="name-input"
+            placeholder="Enter your name, lover…"
+            maxlength="30"
+            autocomplete="off"
+            aria-label="Enter your name"
+          />
+        </div>
+      </div>
+
+      <div class="landing-btns">
+        <button class="btn-glow pulse-btn" id="startBtn">
+          <i class="fas fa-heart me-2"></i>Start the Game
+        </button>
+        <button class="btn-outline-soft" id="timerModeBtn">
+          <i class="fas fa-stopwatch me-2"></i>Timer Mode
+        </button>
+      </div>
+
+      <div class="landing-features">
+        <div class="feature-pill"><i class="fas fa-shuffle"></i> Randomized</div>
+        <div class="feature-pill"><i class="fas fa-star"></i> Match Score</div>
+        <div class="feature-pill"><i class="fab fa-whatsapp"></i> Share on WhatsApp</div>
+      </div>
+    </div>
+
+    <!-- Decorative floating hearts -->
+    <div class="float-hearts" aria-hidden="true">
+      <span>💋</span><span>🌹</span><span>💫</span><span>✨</span><span>💕</span><span>🔥</span>
+    </div>
+  </section>
+
+  <!-- ─── GAME PAGE ─────────────────────────────────────── -->
+  <section id="gamePage" class="page">
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-info">
+        <span id="playerGreet">Hey, dear…</span>
+        <span id="questionCount">1 / 30</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div id="timerBar" class="timer-bar" style="display:none;">
+        <div class="timer-fill" id="timerFill"></div>
+      </div>
+    </div>
+
+    <!-- Question Card -->
+    <div class="card-stage" id="cardStage">
+      <div class="question-card glass-card" id="questionCard">
+
+        <!-- Media area (image / video / emoji) -->
+        <div class="card-media" id="cardMedia"></div>
+
+        <!-- Question text -->
+        <div class="question-text" id="questionText">Loading…</div>
+
+        <!-- Emoji mood -->
+        <div class="question-emoji" id="questionEmoji"></div>
+
+        <!-- Answer buttons -->
+        <div class="answer-grid" id="answerGrid">
+          <button class="answer-btn" id="optionA" aria-label="Option A">
+            <span class="option-label">A</span>
+            <span class="option-text" id="optionAText"></span>
+          </button>
+          <div class="or-divider"><span>OR</span></div>
+          <button class="answer-btn" id="optionB" aria-label="Option B">
+            <span class="option-label">B</span>
+            <span class="option-text" id="optionBText"></span>
+          </button>
+        </div>
+
+        <!-- Reaction pop -->
+        <div class="reaction-pop" id="reactionPop"></div>
+      </div>
+    </div>
+
+    <!-- Skip / Restart -->
+    <div class="game-footer">
+      <button class="ghost-btn" id="skipBtn"><i class="fas fa-forward"></i> Skip</button>
+      <button class="ghost-btn" id="restartBtn"><i class="fas fa-redo"></i> Restart</button>
+    </div>
+  </section>
+
+  <!-- ─── RESULTS PAGE ─────────────────────────────────── -->
+  <section id="resultsPage" class="page">
+    <div class="results-wrap">
+      <div class="results-glass glass-card">
+
+        <div class="results-header">
+          <div class="results-icon">💖</div>
+          <h2 class="results-title">Your Profile</h2>
+          <p class="results-name" id="resultsName"></p>
+        </div>
+
+        <!-- Match Score -->
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="50" class="ring-bg"/>
+            <circle cx="60" cy="60" r="50" class="ring-fill" id="ringFill"/>
+          </svg>
+          <div class="score-center">
+            <span class="score-number" id="scoreNumber">0</span>
+            <span class="score-label">Match<br/>Score</span>
+          </div>
+        </div>
+
+        <!-- Personality tag -->
+        <div class="personality-tag" id="personalityTag"></div>
+
+        <!-- Answers summary -->
+        <div class="answers-summary" id="answersSummary"></div>
+
+        <!-- Action buttons -->
+        <div class="results-actions">
+          <button class="btn-whatsapp" id="whatsappBtn">
+            <i class="fab fa-whatsapp"></i> Send to WhatsApp
+          </button>
+          <button class="btn-glow" id="shareBtn">
+            <i class="fas fa-share-alt"></i> Share Results
+          </button>
+          <button class="btn-outline-soft" id="playAgainBtn">
+            <i class="fas fa-redo"></i> Play Again
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confetti canvas -->
+    <canvas id="confettiCanvas"></canvas>
+  </section>
+
+  <!-- ─── AUDIO (hidden) ────────────────────────────────── -->
+  <audio id="bgMusic" loop>
+    <!-- Royalty-free ambient: users can replace with actual file -->
+    <source src="audio/ambient.mp3" type="audio/mpeg" />
+  </audio>
+  <audio id="sfxClick" src="audio/brant.mpeg" preload="auto"></audio>
+  <audio id="sfxWin" src="audio/brant.mpeg" preload="auto"></audio>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS -->
+  <script src="script.js"></script>
+</body>
+</html>
