@@ -454,7 +454,7 @@ function initPinSystem() {
   adminHint.style.borderRadius = '0.5rem';
   adminHint.style.fontSize = '0.7rem';
   adminHint.style.textAlign = 'center';
-  adminHint.innerHTML = '💡 <strong>Need a PIN?</strong> Contact the admin or go to <strong>/admin.html</strong> to get valid access PINs.';
+  adminHint.innerHTML = '💡 <strong>Need a PIN?</strong> Contact the admin to get valid access.';
   
   const modalGlass = dom.pinModal.querySelector('.modal-glass');
   if (modalGlass && !modalGlass.querySelector('.admin-hint')) {
