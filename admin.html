@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - This or That PIN Manager</title>
+  <style>
+    /* =====================================================
+       GLOBAL STYLES & RESET
+    ===================================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* =====================================================
+       BODY BACKGROUND - Premium Dark Gradient
+    ===================================================== */
+    body {
+      background: linear-gradient(135deg, #1a0a1e, #0a0a0f);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* =====================================================
+       ADMIN CONTAINER - Glassmorphism Card
+    ===================================================== */
+    .admin-container {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 2rem;
+      padding: 2rem;
+      border: 2px solid #e91e63;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 0 50px rgba(233, 30, 99, 0.3);
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* =====================================================
+       TYPOGRAPHY
+    ===================================================== */
+    h1 {
+      color: #e91e63;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #d4a5b5;
+      margin-bottom: 2rem;
+    }
+
+    /* =====================================================
+       PIN GRID - Display PIN Cards
+    ===================================================== */
+    .pin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    /* PIN Card - Individual PIN Display */
+    .pin-card {
+      background: linear-gradient(135deg, #e91e63, #9c27b0);
+      border-radius: 1rem;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .pin-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(233, 30, 99, 0.5);
+    }
+
+    .pin-number {
+      font-size: 2rem;
+      font-weight: bold;
+      font-family: monospace;
+      letter-spacing: 4px;
+      color: white;
+    }
+
+    .pin-label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.8);
+      margin-top: 0.5rem;
+    }
+
+    /* Copy Button */
+    .copy-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 2rem;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      font-size: 0.7rem;
+      transition: 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.4);
+    }
+
+    /* =====================================================
+       INSTRUCTIONS SECTION
+    ===================================================== */
+    .instructions {
+      background: rgba(255,255,255,0.1);
+      padding: 1rem;
+      border-radius: 1rem;
+      margin-top: 1rem;
+    }
+
+    .instructions h3 {
+      color: #e91e63;
+      margin-bottom: 0.5rem;
+    }
+
+    .instructions p {
+      color: #d4a5b5;
+      font-size: 0.85rem;
+      margin: 0.5rem 0;
+    }
+
+    /* =====================================================
+       BUTTONS & LINKS
+    ===================================================== */
+    .back-link {
+      display: inline-block;
+      margin-top: 1rem;
+      color: #e91e63;
+      text-decoration: none;
+      text-align: center;
+      width: 100%;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .refresh-btn {
+      background: #e91e63;
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      margin-top: 1rem;
+      width: 100%;
+      font-size: 1rem;
+    }
+
+    .refresh-btn:hover {
+      background: #c2185b;
+    }
+
+    /* =====================================================
+       STATUS MESSAGES
+    ===================================================== */
+    .status {
+      text-align: center;
+      margin-top: 1rem;
+      color: #4caf50;
+      font-size: 0.8rem;
+    }
+
+    /* =====================================================
+       ANIMATIONS
+    ===================================================== */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>🔐 ADMIN PANEL</h1>
+    <div class="subtitle">This or That - PIN Management System</div>
+
+    <!-- Instructions Section - Tells admin how to use the system -->
+    <div class="instructions">
+      <h3>📋 How to Use:</h3>
+      <p>1. Click on any PIN card to copy it to clipboard</p>
+      <p>2. Go back to the main game page</p>
+      <p>3. Enter the copied PIN in the login screen</p>
+      <p>4. Click "Unlock Game" to access the game</p>
+    </div>
+
+    <!-- PIN Grid - All valid PINs will be displayed here -->
+    <div class="pin-grid" id="pinGrid"></div>
+
+    <!-- Refresh Button - Generate new set of PINs -->
+    <button class="refresh-btn" id="refreshPinsBtn">
+      🔄 Generate New PINs
+    </button>
+
+    <!-- Status Message Area - Shows copy/generation status -->
+    <div class="status" id="statusMsg"></div>
+
+    <!-- Back Link - Return to main game -->
+    <a href="index.html" class="back-link">← Back to Game</a>
+  </div>
+
+  <script>
+    /* =====================================================
+       PIN GENERATION FUNCTION
+       Generates 10 random 4-digit secure PINs
+       - Avoids sequential numbers (1234, 4321, etc.)
+       - Avoids repeating numbers (1111, 2222, etc.)
+       - Avoids year numbers (1990-2025)
+    ===================================================== */
+    function generateSecurePins() {
+      const pins = new Set();  // Use Set to avoid duplicates
+      
+      while (pins.size < 10) {  // Generate until we have 10 unique PINs
+        let pin = Math.floor(1000 + Math.random() * 9000);  // Random between 1000-9999
+        const pinStr = pin.toString();
+        
+        // Check for invalid PIN patterns
+        const isSequential = pinStr === "1234" || pinStr === "4321" || pinStr === "5678" || pinStr === "9876";
+        const isRepeating = /^(\d)\1{3}$/.test(pinStr);  // Checks for 1111, 2222, etc.
+        const isYear = (pin >= 1900 && pin <= 2025);     // Avoids year numbers
+        
+        // Only add valid PINs
+        if (!isSequential && !isRepeating && !isYear) {
+          pins.add(pin);
+        }
+      }
+      return Array.from(pins);  // Convert Set to Array
+    }
+
+    /* =====================================================
+       STORAGE FUNCTIONS
+       Save and load PINs from localStorage
+       This ensures PINs persist across page reloads
+    ===================================================== */
+    
+    // Save PINs to both localStorage and sessionStorage
+    function savePinsToStorage(pins) {
+      localStorage.setItem('valid_game_pins', JSON.stringify(pins));
+      sessionStorage.setItem('valid_game_pins', JSON.stringify(pins));
+    }
+
+    // Load PINs from localStorage
+    function loadPinsFromStorage() {
+      const stored = localStorage.getItem('valid_game_pins');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      return null;  // No stored PINs found
+    }
+
+    /* =====================================================
+       RENDER FUNCTION
+       Displays all valid PINs as interactive cards
+    ===================================================== */
+    let currentPins = [];  // Store current PINs globally
+    
+    function renderPins(pins) {
+      const grid = document.getElementById('pinGrid');
+      if (!grid) return;
+      
+      // Generate HTML for each PIN card
+      grid.innerHTML = pins.map(pin => `
+        <div class="pin-card" data-pin="${pin}">
+          <div class="pin-number">${pin}</div>
+          <div class="pin-label">VALID ACCESS PIN</div>
+          <button class="copy-btn" onclick="copyPin('${pin}')">📋 Copy</button>
+        </div>
+      `).join('');
+    }
+
+    /* =====================================================
+       COPY FUNCTION - Global for onclick access
+       Copies PIN to clipboard and shows status message
+    ===================================================== */
+    window.copyPin = function(pin) {
+      navigator.clipboard.writeText(pin.toString()).then(() => {
+        const status = document.getElementById('statusMsg');
+        if (status) {
+          status.innerHTML = `✅ PIN ${pin} copied to clipboard!`;
+          status.style.color = '#4caf50';
+          setTimeout(() => {
+            status.innerHTML = '';
+          }, 2000);
+        }
+      }).catch(() => {
+        // Fallback if clipboard API fails
+        const status = document.getElementById('statusMsg');
+        if (status) {
+          status.innerHTML = '❌ Failed to copy. Please select manually.';
+          status.style.color = '#ff4444';
+        }
+      });
+    };
+
+    /* =====================================================
+       INITIALIZATION FUNCTION
+       Sets up the admin panel on page load
+    ===================================================== */
+    function initAdmin() {
+      // Try to load existing PINs from storage
+      let pins = loadPinsFromStorage();
+      
+      // If no PINs exist, generate new ones
+      if (!pins || pins.length === 0) {
+        pins = generateSecurePins();
+        savePinsToStorage(pins);
+      }
+      
+      currentPins = pins;  // Store for potential refresh
+      renderPins(pins);    // Display PINs on page
+      
+      // Log to browser console for easy access (developer mode)
+      console.log('%c🔑 ADMIN PANEL - VALID PINS:', 'color: #e91e63; font-size: 16px; font-weight: bold;');
+      console.log('%c' + pins.join(' | '), 'color: #4caf50; font-size: 14px; font-family: monospace;');
+      console.log('%c💡 Share these PINs with authorized users', 'color: #ff9800; font-size: 12px;');
+    }
+
+    /* =====================================================
+       REFRESH PIN FUNCTION
+       Generates completely new set of PINs
+       Old PINs become invalid immediately
+    ===================================================== */
+    const refreshBtn = document.getElementById('refreshPinsBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        // Generate brand new PINs
+        const newPins = generateSecurePins();
+        
+        // Save to storage (overwrites old PINs)
+        savePinsToStorage(newPins);
+        currentPins = newPins;
+        
+        // Re-render the display
+        renderPins(newPins);
+        
+        // Show success message
+        const status = document.getElementById('statusMsg');
+        if (status) {
+          status.innerHTML = '🔄 New PINs generated! Old PINs are no longer valid.';
+          status.style.color = '#ff9800';
+          setTimeout(() => {
+            status.innerHTML = '';
+          }, 3000);
+        }
+        
+        // Log new PINs to console
+        console.log('%c🔄 NEW PINS GENERATED:', 'color: #ff9800; font-size: 14px; font-weight: bold;');
+        console.log('%c' + newPins.join(' | '), 'color: #4caf50; font-size: 14px; font-family: monospace;');
+      });
+    }
+
+    /* =====================================================
+       START THE ADMIN PANEL
+    ===================================================== */
+    initAdmin();
+  </script>
+</body>
+</html>

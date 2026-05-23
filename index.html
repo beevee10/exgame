@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="description" content="This or That – the premium romantic relationship game. Discover your preferences and share with your special someone." />
   <meta name="theme-color" content="#1a0a1e" />
   <title>This or That 💋 – The Relationship Game</title>
@@ -31,6 +31,30 @@
     </div>
   </div>
 
+    <!-- ─── PIN LOGIN MODAL ─────────────────────────────── -->
+  <div id="pinModal" class="modal-overlay" style="display: flex; z-index: 10001;">
+    <div class="modal-glass pin-modal">
+      <div class="modal-icon">🔐</div>
+      <h2>Enter Access PIN</h2>
+      <p>This game is protected. Please enter the 4-digit code to continue.</p>
+      <div class="pin-display" id="pinDisplay">
+        <input type="password" id="pinInput" class="pin-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="****">
+      </div>
+      <div class="pin-error" id="pinError"></div>
+      <div class="modal-actions">
+        <button class="btn-glow" id="pinSubmitBtn">Unlock Game</button>
+      </div>
+      <div class="admin-section" style="margin-top: 1rem;">
+        
+        <div id="validPinsContainer" style="display: none; margin-top: 1rem; padding: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 1rem;">
+          <small style="display: block; margin-bottom: 0.5rem;">🔑 Valid Access PINs:</small>
+          <div id="validPinsList" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;"></div>
+          <small style="display: block; margin-top: 0.5rem; font-size: 0.7rem;">Share these PINs with authorized users</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── PARTICLES CANVAS ─────────────────────────────── -->
   <canvas id="particles"></canvas>
 
@@ -41,10 +65,29 @@
       <span class="brand-name">This or That</span>
     </div>
     <div class="topbar-controls">
-      <button class="icon-btn" id="musicToggle" title="Toggle Music" aria-label="Toggle background music">
-        <i class="fas fa-music"></i>
-      </button>
-      <button class="icon-btn" id="themeToggle" title="Toggle Theme" aria-label="Toggle dark/light mode">
+      <!-- Music selector dropdown -->
+      <div class="music-selector-wrapper">
+        <button class="icon-btn" id="musicToggleBtn" title="Toggle Music" aria-label="Toggle background music">
+          <i class="fas fa-music"></i>
+        </button>
+        <select id="musicSelect" class="music-select" aria-label="Select background music">
+          <option value="none">🎵 No Music</option>
+          <option value="romantic">🎶 Romantic Piano</option>
+          <option value="lofi">🎧 Lo-fi Chill</option>
+          <option value="ambient">🌙 Ambient Love</option>
+          <option value="jazz">🎷 Smooth Jazz</option>
+        </select>
+      </div>
+      <!-- Theme color dropdown -->
+      <select id="themeColorSelect" class="theme-color-select" aria-label="Select background color theme">
+        <option value="dark">🌙 Dark & Red</option>
+        <option value="light">☀️ Light & Pink</option>
+        <option value="sunset">🌅 Sunset Glow</option>
+        <option value="midnight">🌌 Midnight Blue</option>
+        <option value="rose">🌹 Rose Petal</option>
+        <option value="lavender">💜 Lavender Dream</option>
+      </select>
+      <button class="icon-btn" id="themeToggle" title="Toggle Dark/Light" aria-label="Toggle dark/light mode">
         <i class="fas fa-moon"></i>
       </button>
     </div>
@@ -60,8 +103,8 @@
         <span class="title-line">That</span>
       </h1>
       <p class="landing-subtitle">
-        Let's just kill time and Discover your deepest romantic preferences.<br/>
-        30 serious questions. Zero judgment.
+        Discover your deepest romantic preferences.<br/>
+        30 sensual questions. Zero judgment.
       </p>
 
       <div class="name-input-wrap">
@@ -91,11 +134,10 @@
       <div class="landing-features">
         <div class="feature-pill"><i class="fas fa-shuffle"></i> Randomized</div>
         <div class="feature-pill"><i class="fas fa-star"></i> Match Score</div>
-        <div class="feature-pill"><i class="fab fa-whatsapp"></i> Share on WhatsApp</div>
+        <div class="feature-pill"><i class="fab fa-whatsapp"></i> Share Results</div>
       </div>
     </div>
 
-    <!-- Decorative floating hearts -->
     <div class="float-hearts" aria-hidden="true">
       <span>💋</span><span>🌹</span><span>💫</span><span>✨</span><span>💕</span><span>🔥</span>
     </div>
@@ -103,12 +145,14 @@
 
   <!-- ─── GAME PAGE ─────────────────────────────────────── -->
   <section id="gamePage" class="page">
-
-    <!-- Progress -->
     <div class="progress-wrap" id="progressWrap">
       <div class="progress-info">
         <span id="playerGreet">Hey, dear…</span>
-        <span id="questionCount">1 / 30</span>
+        <div class="progress-stats">
+          <span id="questionCount">1 / 30</span>
+          <button class="icon-btn-sm" id="exitGameBtn" title="Exit to beginning"><i class="fas fa-door-open"></i> Exit</button>
+          <button class="icon-btn-sm" id="restartGameBtn" title="Restart Game"><i class="fas fa-undo-alt"></i> Restart</button>
+        </div>
       </div>
       <div class="progress-bar-track">
         <div class="progress-bar-fill" id="progressFill"></div>
@@ -121,38 +165,22 @@
     <!-- Question Card -->
     <div class="card-stage" id="cardStage">
       <div class="question-card glass-card" id="questionCard">
-
-        <!-- Media area (image / video / emoji) -->
-        <div class="card-media" id="cardMedia"></div>
-
         <!-- Question text -->
         <div class="question-text" id="questionText">Loading…</div>
-
         <!-- Emoji mood -->
         <div class="question-emoji" id="questionEmoji"></div>
-
-        <!-- Answer buttons -->
-        <div class="answer-grid" id="answerGrid">
-          <button class="answer-btn" id="optionA" aria-label="Option A">
-            <span class="option-label">A</span>
-            <span class="option-text" id="optionAText"></span>
-          </button>
-          <div class="or-divider"><span>OR</span></div>
-          <button class="answer-btn" id="optionB" aria-label="Option B">
-            <span class="option-label">B</span>
-            <span class="option-text" id="optionBText"></span>
-          </button>
-        </div>
-
-        <!-- Reaction pop -->
+        <!-- Answer container for two image cards -->
+        <div id="answerContainer" class="answer-container"></div>
         <div class="reaction-pop" id="reactionPop"></div>
       </div>
     </div>
 
-    <!-- Skip / Restart -->
     <div class="game-footer">
       <button class="ghost-btn" id="skipBtn"><i class="fas fa-forward"></i> Skip</button>
-      <button class="ghost-btn" id="restartBtn"><i class="fas fa-redo"></i> Restart</button>
+      <div class="audio-controls">
+        <i class="fas fa-volume-up" id="audioControlIcon"></i>
+        <input type="range" id="volumeSlider" min="0" max="100" value="30" class="volume-slider">
+      </div>
     </div>
   </section>
 
@@ -160,14 +188,12 @@
   <section id="resultsPage" class="page">
     <div class="results-wrap">
       <div class="results-glass glass-card">
-
         <div class="results-header">
           <div class="results-icon">💖</div>
           <h2 class="results-title">Your Profile</h2>
           <p class="results-name" id="resultsName"></p>
         </div>
 
-        <!-- Match Score -->
         <div class="score-ring-wrap">
           <svg class="score-ring" viewBox="0 0 120 120" aria-hidden="true">
             <circle cx="60" cy="60" r="50" class="ring-bg"/>
@@ -179,13 +205,9 @@
           </div>
         </div>
 
-        <!-- Personality tag -->
         <div class="personality-tag" id="personalityTag"></div>
-
-        <!-- Answers summary -->
         <div class="answers-summary" id="answersSummary"></div>
 
-        <!-- Action buttons -->
         <div class="results-actions">
           <button class="btn-whatsapp" id="whatsappBtn">
             <i class="fab fa-whatsapp"></i> Send to WhatsApp
@@ -197,24 +219,32 @@
             <i class="fas fa-redo"></i> Play Again
           </button>
         </div>
+        
+        <!-- WhatsApp number input -->
+        <div class="whatsapp-number-input mt-3">
+          <label><i class="fab fa-whatsapp"></i> Send to WhatsApp number:</label>
+          <div class="input-group">
+            <input type="tel" id="whatsappNumber" class="form-control" placeholder="e.g., 1234567890 (no + or spaces)" value="">
+            <button class="btn-send-wa" id="sendCustomWaBtn"><i class="fab fa-whatsapp"></i> Send</button>
+          </div>
+          <small class="text-muted">Enter any number you want to send results to</small>
+        </div>
       </div>
     </div>
-
-    <!-- Confetti canvas -->
     <canvas id="confettiCanvas"></canvas>
   </section>
 
-  <!-- ─── AUDIO (hidden) ────────────────────────────────── -->
-  <audio id="bgMusic" loop>
-    <!-- Royalty-free ambient: users can replace with actual file -->
-    <source src="audio/ambient.mp3" type="audio/mpeg" />
+  <!-- Audio elements -->
+  <audio id="bgMusic" loop preload="auto"></audio>
+  <audio id="sfxClick" preload="auto">
+    <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
   </audio>
-  <audio id="sfxClick" src="audio/brant.mpeg" preload="auto"></audio>
-  <audio id="sfxWin" src="audio/brant.mpeg" preload="auto"></audio>
+  <audio id="sfxWin" preload="auto">
+    <source src="https://www.soundjay.com/misc/sounds/applause-01.mp3" type="audio/mpeg">
+  </audio>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Custom JS -->
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
   <script src="script.js"></script>
 </body>
 </html>
