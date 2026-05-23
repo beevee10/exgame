@@ -5,18 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel - This or That PIN Manager</title>
   <style>
-    /* =====================================================
-       GLOBAL STYLES & RESET
-    ===================================================== */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
-    /* =====================================================
-       BODY BACKGROUND - Premium Dark Gradient
-    ===================================================== */
     body {
       background: linear-gradient(135deg, #1a0a1e, #0a0a0f);
       font-family: 'Courier New', monospace;
@@ -27,24 +21,17 @@
       padding: 20px;
     }
 
-    /* =====================================================
-       ADMIN CONTAINER - Glassmorphism Card
-    ===================================================== */
     .admin-container {
       background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(10px);
       border-radius: 2rem;
       padding: 2rem;
       border: 2px solid #e91e63;
-      max-width: 600px;
+      max-width: 700px;
       width: 100%;
       box-shadow: 0 0 50px rgba(233, 30, 99, 0.3);
-      animation: fadeIn 0.5s ease;
     }
 
-    /* =====================================================
-       TYPOGRAPHY
-    ===================================================== */
     h1 {
       color: #e91e63;
       text-align: center;
@@ -58,9 +45,27 @@
       margin-bottom: 2rem;
     }
 
-    /* =====================================================
-       PIN GRID - Display PIN Cards
-    ===================================================== */
+    /* Timer Display */
+    .timer-info {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .timer-info h3 {
+      color: #ff9800;
+      margin-bottom: 0.5rem;
+    }
+
+    .countdown {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ff9800;
+      font-family: monospace;
+    }
+
     .pin-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -68,7 +73,6 @@
       margin: 2rem 0;
     }
 
-    /* PIN Card - Individual PIN Display */
     .pin-card {
       background: linear-gradient(135deg, #e91e63, #9c27b0);
       border-radius: 1rem;
@@ -97,7 +101,6 @@
       margin-top: 0.5rem;
     }
 
-    /* Copy Button */
     .copy-btn {
       background: rgba(255,255,255,0.2);
       border: none;
@@ -114,9 +117,6 @@
       background: rgba(255,255,255,0.4);
     }
 
-    /* =====================================================
-       INSTRUCTIONS SECTION
-    ===================================================== */
     .instructions {
       background: rgba(255,255,255,0.1);
       padding: 1rem;
@@ -135,9 +135,6 @@
       margin: 0.5rem 0;
     }
 
-    /* =====================================================
-       BUTTONS & LINKS
-    ===================================================== */
     .back-link {
       display: inline-block;
       margin-top: 1rem;
@@ -167,9 +164,6 @@
       background: #c2185b;
     }
 
-    /* =====================================================
-       STATUS MESSAGES
-    ===================================================== */
     .status {
       text-align: center;
       margin-top: 1rem;
@@ -177,12 +171,23 @@
       font-size: 0.8rem;
     }
 
-    /* =====================================================
-       ANIMATIONS
-    ===================================================== */
+    .expiry-warning {
+      background: rgba(255, 152, 0, 0.2);
+      border: 1px solid #ff9800;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.7rem;
+      text-align: center;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .admin-container {
+      animation: fadeIn 0.5s ease;
     }
   </style>
 </head>
@@ -191,90 +196,150 @@
     <h1>🔐 ADMIN PANEL</h1>
     <div class="subtitle">This or That - PIN Management System</div>
 
-    <!-- Instructions Section - Tells admin how to use the system -->
+    <!-- Timer Display -->
+    <div class="timer-info">
+      <h3>⏰ Current PINs Expire In:</h3>
+      <div class="countdown" id="countdownTimer">01:00:00</div>
+      <div class="expiry-warning">
+        ⚠️ PINs expire after 1 hour and will work on ANY browser/device
+      </div>
+    </div>
+
     <div class="instructions">
       <h3>📋 How to Use:</h3>
       <p>1. Click on any PIN card to copy it to clipboard</p>
-      <p>2. Go back to the main game page</p>
-      <p>3. Enter the copied PIN in the login screen</p>
-      <p>4. Click "Unlock Game" to access the game</p>
+      <p>2. Share this PIN with anyone you want to grant access</p>
+      <p>3. PINs work on ANY browser/device for 1 hour</p>
+      <p>4. Click "Generate New PINs" to create fresh codes</p>
     </div>
 
-    <!-- PIN Grid - All valid PINs will be displayed here -->
     <div class="pin-grid" id="pinGrid"></div>
 
-    <!-- Refresh Button - Generate new set of PINs -->
     <button class="refresh-btn" id="refreshPinsBtn">
-      🔄 Generate New PINs
+      🔄 Generate New PINs (1 hour validity)
     </button>
 
-    <!-- Status Message Area - Shows copy/generation status -->
     <div class="status" id="statusMsg"></div>
 
-    <!-- Back Link - Return to main game -->
     <a href="index.html" class="back-link">← Back to Game</a>
   </div>
 
   <script>
-    /* =====================================================
-       PIN GENERATION FUNCTION
-       Generates 10 random 4-digit secure PINs
-       - Avoids sequential numbers (1234, 4321, etc.)
-       - Avoids repeating numbers (1111, 2222, etc.)
-       - Avoids year numbers (1990-2025)
-    ===================================================== */
+    // Storage key for cross-browser PINs
+    const PIN_STORAGE_KEY = 'global_game_pins';
+    const PIN_EXPIRY_KEY = 'pin_expiry_time';
+
+    /**
+     * Generates random secure PINs
+     */
     function generateSecurePins() {
-      const pins = new Set();  // Use Set to avoid duplicates
-      
-      while (pins.size < 10) {  // Generate until we have 10 unique PINs
-        let pin = Math.floor(1000 + Math.random() * 9000);  // Random between 1000-9999
+      const pins = new Set();
+      while (pins.size < 10) {
+        let pin = Math.floor(1000 + Math.random() * 9000);
         const pinStr = pin.toString();
-        
-        // Check for invalid PIN patterns
         const isSequential = pinStr === "1234" || pinStr === "4321" || pinStr === "5678" || pinStr === "9876";
-        const isRepeating = /^(\d)\1{3}$/.test(pinStr);  // Checks for 1111, 2222, etc.
-        const isYear = (pin >= 1900 && pin <= 2025);     // Avoids year numbers
-        
-        // Only add valid PINs
+        const isRepeating = /^(\d)\1{3}$/.test(pinStr);
+        const isYear = (pin >= 1900 && pin <= 2025);
         if (!isSequential && !isRepeating && !isYear) {
           pins.add(pin);
         }
       }
-      return Array.from(pins);  // Convert Set to Array
+      return Array.from(pins);
     }
 
-    /* =====================================================
-       STORAGE FUNCTIONS
-       Save and load PINs from localStorage
-       This ensures PINs persist across page reloads
-    ===================================================== */
-    
-    // Save PINs to both localStorage and sessionStorage
-    function savePinsToStorage(pins) {
-      localStorage.setItem('valid_game_pins', JSON.stringify(pins));
-      sessionStorage.setItem('valid_game_pins', JSON.stringify(pins));
+    /**
+     * Saves PINs with 1-hour expiry timestamp
+     */
+    function savePinsWithExpiry(pins) {
+      const expiryTime = Date.now() + (60 * 60 * 1000); // 1 hour from now
+      const pinData = {
+        pins: pins,
+        expiry: expiryTime,
+        createdAt: Date.now()
+      };
+      localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(pinData));
+      sessionStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(pinData));
+      // Also store in window object for same-tab access
+      window._globalPins = pinData;
+      return expiryTime;
     }
 
-    // Load PINs from localStorage
-    function loadPinsFromStorage() {
-      const stored = localStorage.getItem('valid_game_pins');
+    /**
+     * Loads PINs and checks if they're still valid
+     */
+    function loadValidPins() {
+      // Try to load from localStorage first
+      let pinData = null;
+      const stored = localStorage.getItem(PIN_STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        pinData = JSON.parse(stored);
       }
-      return null;  // No stored PINs found
+      
+      // If not in localStorage, check sessionStorage
+      if (!pinData) {
+        const sessionStored = sessionStorage.getItem(PIN_STORAGE_KEY);
+        if (sessionStored) {
+          pinData = JSON.parse(sessionStored);
+        }
+      }
+      
+      // Check if window has global pins
+      if (!pinData && window._globalPins) {
+        pinData = window._globalPins;
+      }
+      
+      // If no stored PINs or expired, generate new ones
+      if (!pinData || !pinData.pins || pinData.pins.length === 0 || Date.now() > pinData.expiry) {
+        const newPins = generateSecurePins();
+        const expiry = savePinsWithExpiry(newPins);
+        return { pins: newPins, expiry: expiry };
+      }
+      
+      return { pins: pinData.pins, expiry: pinData.expiry };
     }
 
-    /* =====================================================
-       RENDER FUNCTION
-       Displays all valid PINs as interactive cards
-    ===================================================== */
-    let currentPins = [];  // Store current PINs globally
-    
-    function renderPins(pins) {
+    /**
+     * Updates the countdown timer display
+     */
+    function updateCountdown(expiryTime) {
+      const timerElement = document.getElementById('countdownTimer');
+      if (!timerElement) return;
+      
+      const update = () => {
+        const now = Date.now();
+        const remaining = expiryTime - now;
+        
+        if (remaining <= 0) {
+          timerElement.textContent = '00:00:00';
+          timerElement.style.color = '#ff4444';
+          return;
+        }
+        
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+        
+        timerElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        if (remaining < 600000) { // Less than 10 minutes
+          timerElement.style.color = '#ff9800';
+        } else {
+          timerElement.style.color = '#4caf50';
+        }
+      };
+      
+      update();
+      const interval = setInterval(update, 1000);
+      return interval;
+    }
+
+    /**
+     * Renders PINs to the grid
+     */
+    function renderPins(pins, expiryTime) {
       const grid = document.getElementById('pinGrid');
       if (!grid) return;
       
-      // Generate HTML for each PIN card
       grid.innerHTML = pins.map(pin => `
         <div class="pin-card" data-pin="${pin}">
           <div class="pin-number">${pin}</div>
@@ -282,24 +347,24 @@
           <button class="copy-btn" onclick="copyPin('${pin}')">📋 Copy</button>
         </div>
       `).join('');
+      
+      updateCountdown(expiryTime);
     }
 
-    /* =====================================================
-       COPY FUNCTION - Global for onclick access
-       Copies PIN to clipboard and shows status message
-    ===================================================== */
+    /**
+     * Copies PIN to clipboard
+     */
     window.copyPin = function(pin) {
       navigator.clipboard.writeText(pin.toString()).then(() => {
         const status = document.getElementById('statusMsg');
         if (status) {
-          status.innerHTML = `✅ PIN ${pin} copied to clipboard!`;
+          status.innerHTML = `✅ PIN ${pin} copied to clipboard! Share it with anyone.`;
           status.style.color = '#4caf50';
           setTimeout(() => {
             status.innerHTML = '';
           }, 2000);
         }
       }).catch(() => {
-        // Fallback if clipboard API fails
         const status = document.getElementById('statusMsg');
         if (status) {
           status.innerHTML = '❌ Failed to copy. Please select manually.';
@@ -308,66 +373,44 @@
       });
     };
 
-    /* =====================================================
-       INITIALIZATION FUNCTION
-       Sets up the admin panel on page load
-    ===================================================== */
-    function initAdmin() {
-      // Try to load existing PINs from storage
-      let pins = loadPinsFromStorage();
+    /**
+     * Refreshes PINs with new ones
+     */
+    function refreshPins() {
+      const newPins = generateSecurePins();
+      const expiryTime = savePinsWithExpiry(newPins);
+      renderPins(newPins, expiryTime);
       
-      // If no PINs exist, generate new ones
-      if (!pins || pins.length === 0) {
-        pins = generateSecurePins();
-        savePinsToStorage(pins);
+      const status = document.getElementById('statusMsg');
+      if (status) {
+        status.innerHTML = '🔄 New PINs generated! Valid for 1 hour on ANY device.';
+        status.style.color = '#4caf50';
+        setTimeout(() => {
+          status.innerHTML = '';
+        }, 3000);
       }
       
-      currentPins = pins;  // Store for potential refresh
-      renderPins(pins);    // Display PINs on page
+      console.log('%c🔄 NEW PINS GENERATED (Valid for 1 hour):', 'color: #ff9800; font-size: 14px; font-weight: bold;');
+      console.log('%c' + newPins.join(' | '), 'color: #4caf50; font-size: 14px; font-family: monospace;');
+    }
+
+    /**
+     * Initializes the admin panel
+     */
+    function initAdmin() {
+      const { pins, expiry } = loadValidPins();
+      renderPins(pins, expiry);
       
-      // Log to browser console for easy access (developer mode)
-      console.log('%c🔑 ADMIN PANEL - VALID PINS:', 'color: #e91e63; font-size: 16px; font-weight: bold;');
+      console.log('%c🔑 ADMIN PANEL - VALID PINS (Cross-Browser Compatible):', 'color: #e91e63; font-size: 16px; font-weight: bold;');
       console.log('%c' + pins.join(' | '), 'color: #4caf50; font-size: 14px; font-family: monospace;');
-      console.log('%c💡 Share these PINs with authorized users', 'color: #ff9800; font-size: 12px;');
+      console.log('%c⏰ PINs expire at: ' + new Date(expiry).toLocaleString(), 'color: #ff9800; font-size: 12px;');
+      console.log('%c💡 These PINs work on ANY browser/device for 1 hour', 'color: #2196f3; font-size: 12px;');
     }
 
-    /* =====================================================
-       REFRESH PIN FUNCTION
-       Generates completely new set of PINs
-       Old PINs become invalid immediately
-    ===================================================== */
-    const refreshBtn = document.getElementById('refreshPinsBtn');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
-        // Generate brand new PINs
-        const newPins = generateSecurePins();
-        
-        // Save to storage (overwrites old PINs)
-        savePinsToStorage(newPins);
-        currentPins = newPins;
-        
-        // Re-render the display
-        renderPins(newPins);
-        
-        // Show success message
-        const status = document.getElementById('statusMsg');
-        if (status) {
-          status.innerHTML = '🔄 New PINs generated! Old PINs are no longer valid.';
-          status.style.color = '#ff9800';
-          setTimeout(() => {
-            status.innerHTML = '';
-          }, 3000);
-        }
-        
-        // Log new PINs to console
-        console.log('%c🔄 NEW PINS GENERATED:', 'color: #ff9800; font-size: 14px; font-weight: bold;');
-        console.log('%c' + newPins.join(' | '), 'color: #4caf50; font-size: 14px; font-family: monospace;');
-      });
-    }
-
-    /* =====================================================
-       START THE ADMIN PANEL
-    ===================================================== */
+    // Refresh button handler
+    document.getElementById('refreshPinsBtn')?.addEventListener('click', refreshPins);
+    
+    // Initialize
     initAdmin();
   </script>
 </body>

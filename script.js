@@ -1,13 +1,16 @@
 /* ═══════════════════════════════════════════════════════════
-   THIS OR THAT · Premium Fun Game · script.js
-   WITH PIN LOGIN SYSTEM (10 Random Secure PINs)
+   THIS OR THAT · Premium Romantic Game · script.js
+   WITH CROSS-BROWSER PIN SYSTEM (Valid for 1 hour)
    ═══════════════════════════════════════════════════════════ */
 
 "use strict";
 
 /* ═══════════════════════════════════════════════════════════
-   SECTION 1: PIN SECURITY SYSTEM
+   SECTION 1: PIN SECURITY SYSTEM (Cross-Browser Compatible)
    ═══════════════════════════════════════════════════════════ */
+
+// Storage key for cross-browser PINs
+const PIN_STORAGE_KEY = 'global_game_pins';
 
 /**
  * Generates 10 random 4-digit secure PINs
@@ -15,71 +18,80 @@
  * @returns {Array} Array of 10 unique PINs
  */
 function generateSecurePins() {
-  const pins = new Set();  // Use Set to prevent duplicates
-  
+  const pins = new Set();
   while (pins.size < 10) {
-    let pin = Math.floor(1000 + Math.random() * 9000);  // Random between 1000-9999
+    let pin = Math.floor(1000 + Math.random() * 9000);
     const pinStr = pin.toString();
-    
-    // Check for invalid PIN patterns
     const isSequential = pinStr === "1234" || pinStr === "4321" || pinStr === "5678" || pinStr === "9876";
-    const isRepeating = /^(\d)\1{3}$/.test(pinStr);  // Matches 1111, 2222, etc.
-    const isYear = (pin >= 1900 && pin <= 2025);      // Avoids common year numbers
-    
+    const isRepeating = /^(\d)\1{3}$/.test(pinStr);
+    const isYear = (pin >= 1900 && pin <= 2025);
     if (!isSequential && !isRepeating && !isYear) {
       pins.add(pin);
     }
   }
-  
-  // Fallback backup PINs in case generation fails
-  if (pins.size < 10) {
-    const backups = [2847, 5936, 7182, 3695, 8417, 6253, 4791, 9362, 1578, 6429];
-    backups.forEach(p => pins.add(p));
-  }
-  
-  return Array.from(pins).slice(0, 10);
+  return Array.from(pins);
 }
 
 /**
  * Loads valid PINs from localStorage (set by admin.html)
- * If no stored PINs exist, generates new ones
+ * PINs are cross-browser compatible and expire after 1 hour
  * @returns {Array} Array of valid access PINs
  */
 function loadValidPins() {
-  // First priority: Load from localStorage (set by admin page)
-  const storedPins = localStorage.getItem('valid_game_pins');
-  if (storedPins) {
-    return JSON.parse(storedPins);
+  const stored = localStorage.getItem(PIN_STORAGE_KEY);
+  
+  if (stored) {
+    try {
+      const pinData = JSON.parse(stored);
+      
+      if (pinData.pins && pinData.pins.length > 0) {
+        const now = Date.now();
+        const expiryTime = pinData.expiry;
+        
+        if (now < expiryTime) {
+          console.log(`%c✅ PINs loaded - Valid until: ${new Date(expiryTime).toLocaleTimeString()}`, 'color: #4caf50; font-size: 12px;');
+          return pinData.pins;
+        } else {
+          console.log('%c⚠️ PINs expired - Please generate new ones from admin panel', 'color: #ff9800; font-size: 12px;');
+          localStorage.removeItem(PIN_STORAGE_KEY);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading PINs:', e);
+    }
   }
   
-  // Second priority: Generate new secure PINs
-  const newPins = generateSecurePins();
-  localStorage.setItem('valid_game_pins', JSON.stringify(newPins));
-  return newPins;
+  // If no valid PINs found, generate fallback PINs
+  const fallbackPins = [2847, 5936, 7182, 3695, 8417, 6253, 4791, 9362, 1578, 6429];
+  console.log('%c⚠️ Using fallback PINs - Please use admin panel to generate official PINs', 'color: #ff9800; font-size: 12px;');
+  return fallbackPins;
 }
 
 // Initialize authorized PINs from storage
 let AUTHORIZED_PINS = loadValidPins();
 
 /**
- * Shuffles an array for additional security
- * @param {Array} arr - Array to shuffle
- * @returns {Array} Shuffled array
+ * Checks and refreshes PINs if needed
+ * Runs periodically to ensure PINs are up to date
  */
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+function refreshPINsIfNeeded() {
+  const stored = localStorage.getItem(PIN_STORAGE_KEY);
+  if (stored) {
+    try {
+      const pinData = JSON.parse(stored);
+      if (pinData.pins && pinData.pins.length > 0 && Date.now() < pinData.expiry) {
+        AUTHORIZED_PINS = pinData.pins;
+        console.log('%c🔄 PINs refreshed from storage', 'color: #2196f3; font-size: 12px;');
+      }
+    } catch (e) {}
   }
-  return arr;
 }
 
-// Shuffle PINs for extra security
-AUTHORIZED_PINS = shuffleArray([...AUTHORIZED_PINS]);
+// Check for PIN updates every 30 seconds
+setInterval(refreshPINsIfNeeded, 30000);
 
 /* ═══════════════════════════════════════════════════════════
    SECTION 2: 30 ROMANTIC QUESTIONS WITH IMAGES
-   Each question has two options with associated images
    ═══════════════════════════════════════════════════════════ */
 
 const ALL_QUESTIONS = [
@@ -204,14 +216,14 @@ const ALL_QUESTIONS = [
     reactions: ["😜", "🔥"]
   },
   {
-    "text": "What’s your favorite way to be kissed?",
-    "optionA": "Soft & slow",
-    "optionB": "Deep & passionate",
-    "optionAImage": "images/slow.jpg",
-    "optionBImage": "images/deep.jpg",
-    "optionAEmoji": "🫦",
-    "optionBEmoji": "🔥",
-    "reactions": ["🫦", "🔥"]
+    text: "What’s your favorite way to be kissed?",
+    optionA: "Soft & slow",
+    optionB: "Deep & passionate",
+    optionAImage: "images/slow.jpg",
+    optionBImage: "images/deep.jpg",
+    optionAEmoji: "🫦",
+    optionBEmoji: "🔥",
+    reactions: ["🫦", "🔥"]
   },
   {
     text: "Lights on or Lights off?",
@@ -414,21 +426,21 @@ const PERSONALITIES = [
    ═══════════════════════════════════════════════════════════ */
 
 const state = {
-  playerName:    "",      // Player's entered name
-  questions:     [],      // Shuffled questions array
-  currentIndex:  0,       // Current question index
-  answers:       [],      // Stored answers
-  timerMode:     false,   // Timer mode active flag
-  timerInterval: null,    // Timer interval reference
-  timerSeconds:  10,      // Timer duration in seconds
-  timerLeft:     10,      // Remaining timer seconds
-  musicOn:       false,   // Music playing flag
-  currentMusic:  "none",  // Currently selected music track
-  theme:         "dark",  // Current color theme
-  touchStartX:   0,       // Touch start X for swipe
-  touchStartY:   0,       // Touch start Y for swipe
-  volume:        30,      // Volume level (0-100)
-  isAuthenticated: false  // PIN authentication status
+  playerName:    "",
+  questions:     [],
+  currentIndex:  0,
+  answers:       [],
+  timerMode:     false,
+  timerInterval: null,
+  timerSeconds:  10,
+  timerLeft:     10,
+  musicOn:       false,
+  currentMusic:  "none",
+  theme:         "dark",
+  touchStartX:   0,
+  touchStartY:   0,
+  volume:        30,
+  isAuthenticated: false
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -438,7 +450,6 @@ const state = {
 const $ = id => document.getElementById(id);
 
 const dom = {
-  // Modal elements
   ageModal:      $("ageModal"),
   ageYes:        $("ageYes"),
   ageNo:         $("ageNo"),
@@ -446,24 +457,16 @@ const dom = {
   pinInput:      $("pinInput"),
   pinSubmitBtn:  $("pinSubmitBtn"),
   pinError:      $("pinError"),
-  
-  // Page sections
   landingPage:   $("landingPage"),
   gamePage:      $("gamePage"),
   resultsPage:   $("resultsPage"),
-  
-  // Input elements
   playerName:    $("playerName"),
   startBtn:      $("startBtn"),
   timerModeBtn:  $("timerModeBtn"),
-  
-  // Controls
-  musicToggleBtn:    $("musicToggleBtn"),
-  musicSelect:       $("musicSelect"),
-  themeColorSelect:  $("themeColorSelect"),
-  themeToggle:       $("themeToggle"),
-  
-  // Game display elements
+  musicToggleBtn:$("musicToggleBtn"),
+  musicSelect:   $("musicSelect"),
+  themeColorSelect: $("themeColorSelect"),
+  themeToggle:   $("themeToggle"),
   playerGreet:   $("playerGreet"),
   questionCount: $("questionCount"),
   progressFill:  $("progressFill"),
@@ -474,50 +477,34 @@ const dom = {
   answerContainer: $("answerContainer"),
   reactionPop:   $("reactionPop"),
   questionCard:  $("questionCard"),
-  
-  // Game control buttons
   skipBtn:       $("skipBtn"),
   restartBtn:    $("restartBtn"),
   exitGameBtn:   $("exitGameBtn"),
   restartGameBtn:$("restartGameBtn"),
-  
-  // Results page elements
   resultsName:   $("resultsName"),
   scoreNumber:   $("scoreNumber"),
   ringFill:      $("ringFill"),
   personalityTag:$("personalityTag"),
   answersSummary:$("answersSummary"),
-  
-  // WhatsApp elements
   whatsappBtn:   $("whatsappBtn"),
   shareBtn:      $("shareBtn"),
   playAgainBtn:  $("playAgainBtn"),
   sendCustomWaBtn:$("sendCustomWaBtn"),
   whatsappNumber:$("whatsappNumber"),
-  
-  // Audio elements
   bgMusic:       $("bgMusic"),
   sfxClick:      $("sfxClick"),
   sfxWin:        $("sfxWin"),
-  volumeSlider:  $("volumeSlider"),
-  audioControlIcon: $("audioControlIcon"),
-  
-  // Canvas elements
   particles:     $("particles"),
-  confettiCanvas:$("confettiCanvas")
+  confettiCanvas:$("confettiCanvas"),
+  volumeSlider:  $("volumeSlider"),
+  audioControlIcon: $("audioControlIcon")
 };
 
 /* ═══════════════════════════════════════════════════════════
    SECTION 7: PIN AUTHENTICATION SYSTEM
-   Handles PIN verification and access control
    ═══════════════════════════════════════════════════════════ */
 
-/**
- * Initializes the PIN authentication system
- * Shows modal and handles PIN verification
- */
 function initPinSystem() {
-  // Check if already authenticated in this session
   const sessionAuth = sessionStorage.getItem("tot_auth");
   if (sessionAuth === "true") {
     state.isAuthenticated = true;
@@ -525,10 +512,9 @@ function initPinSystem() {
     return;
   }
   
-  // Show PIN modal if not authenticated
   if (dom.pinModal) dom.pinModal.style.display = "flex";
   
-  // Add hint about admin page for easy PIN access
+  // Add admin hint
   const adminHint = document.createElement('div');
   adminHint.style.marginTop = '1rem';
   adminHint.style.padding = '0.5rem';
@@ -536,7 +522,7 @@ function initPinSystem() {
   adminHint.style.borderRadius = '0.5rem';
   adminHint.style.fontSize = '0.7rem';
   adminHint.style.textAlign = 'center';
-  
+  adminHint.innerHTML = '💡 <strong>Need a PIN?</strong> Contact the admin to get a valid access PIN. PINs work on ANY browser/device for 1 hour.';
   
   const modalGlass = dom.pinModal.querySelector('.modal-glass');
   if (modalGlass && !modalGlass.querySelector('.admin-hint')) {
@@ -544,12 +530,35 @@ function initPinSystem() {
     modalGlass.appendChild(adminHint);
   }
   
-  // Log valid PINs to console for developer access
-  console.log("%c🔑 VALID ACCESS PINS:", "color: #e91e63; font-size: 16px; font-weight: bold;");
-  console.log("%c" + AUTHORIZED_PINS.join(" | "), "color: #4caf50; font-size: 14px; font-family: monospace;");
-  console.log("%c📁 Go to /admin.html to manage PINs", "color: #2196f3; font-size: 12px;");
+  // Check expiry and show warning
+  const stored = localStorage.getItem(PIN_STORAGE_KEY);
+  if (stored) {
+    try {
+      const pinData = JSON.parse(stored);
+      const remaining = pinData.expiry - Date.now();
+      if (remaining < 600000 && remaining > 0) {
+        const minutesLeft = Math.ceil(remaining / 60000);
+        const expiryWarning = document.createElement('div');
+        expiryWarning.style.marginTop = '0.5rem';
+        expiryWarning.style.padding = '0.3rem';
+        expiryWarning.style.background = 'rgba(255, 152, 0, 0.2)';
+        expiryWarning.style.borderRadius = '0.5rem';
+        expiryWarning.style.fontSize = '0.7rem';
+        expiryWarning.style.textAlign = 'center';
+        expiryWarning.style.color = '#ff9800';
+        expiryWarning.innerHTML = `⚠️ Current PINs expire in ${minutesLeft} minute(s)`;
+        if (modalGlass && !modalGlass.querySelector('.expiry-warning')) {
+          expiryWarning.className = 'expiry-warning';
+          modalGlass.appendChild(expiryWarning);
+        }
+      }
+    } catch (e) {}
+  }
   
-  // Attach event listeners
+  // Log valid PINs to console
+  console.log("%c🔑 VALID ACCESS PINS (Cross-Browser Compatible):", "color: #e91e63; font-size: 16px; font-weight: bold;");
+  console.log("%c" + AUTHORIZED_PINS.join(" | "), "color: #4caf50; font-size: 14px; font-family: monospace;");
+  
   if (dom.pinSubmitBtn) {
     dom.pinSubmitBtn.addEventListener("click", verifyPin);
   }
@@ -562,13 +571,9 @@ function initPinSystem() {
   }
 }
 
-/**
- * Verifies the entered PIN against authorized PINs
- */
 function verifyPin() {
   const enteredPin = dom.pinInput ? dom.pinInput.value.trim() : "";
   
-  // Validate PIN format
   if (enteredPin.length !== 4 || !/^\d+$/.test(enteredPin)) {
     if (dom.pinError) dom.pinError.textContent = "❌ Please enter a valid 4-digit PIN";
     if (dom.pinInput) dom.pinInput.value = "";
@@ -577,13 +582,10 @@ function verifyPin() {
   
   const pinNum = parseInt(enteredPin, 10);
   
-  // Check if PIN is authorized
   if (AUTHORIZED_PINS.includes(pinNum)) {
-    // Successful authentication
     state.isAuthenticated = true;
     sessionStorage.setItem("tot_auth", "true");
     
-    // Animate modal closing
     if (dom.pinModal) {
       dom.pinModal.style.opacity = "0";
       setTimeout(() => {
@@ -593,15 +595,14 @@ function verifyPin() {
     
     playSfx(dom.sfxClick);
     if (dom.pinError) dom.pinError.textContent = "";
+    console.log(`%c✅ Access granted with PIN: ${pinNum}`, 'color: #4caf50; font-size: 12px;');
   } else {
-    // Failed authentication
     if (dom.pinError) dom.pinError.textContent = "❌ Invalid PIN. Access denied.";
     if (dom.pinInput) {
       dom.pinInput.value = "";
       dom.pinInput.focus();
     }
     
-    // Add shake animation for visual feedback
     const modal = dom.pinModal ? dom.pinModal.querySelector(".modal-glass") : null;
     if (modal) {
       modal.classList.add("shake-animation");
@@ -614,11 +615,6 @@ function verifyPin() {
    SECTION 8: UTILITY FUNCTIONS
    ═══════════════════════════════════════════════════════════ */
 
-/**
- * Shuffles an array using Fisher-Yates algorithm
- * @param {Array} arr - Array to shuffle
- * @returns {Array} New shuffled array
- */
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -628,10 +624,6 @@ function shuffle(arr) {
   return a;
 }
 
-/**
- * Plays a sound effect
- * @param {HTMLAudioElement} el - Audio element to play
- */
 function playSfx(el) {
   if (!el) return;
   el.currentTime = 0;
@@ -639,10 +631,6 @@ function playSfx(el) {
   el.play().catch(() => {});
 }
 
-/**
- * Shows a specific page and hides others
- * @param {string} id - Page ID to show
- */
 function showPage(id) {
   ["landingPage", "gamePage", "resultsPage"].forEach(pid => {
     const pg = $(pid);
@@ -652,9 +640,6 @@ function showPage(id) {
   if (target) target.classList.add("active");
 }
 
-/**
- * Saves game progress to localStorage
- */
 function saveProgress() {
   try {
     localStorage.setItem("tot_answers", JSON.stringify(state.answers));
@@ -665,7 +650,6 @@ function saveProgress() {
 
 /* ═══════════════════════════════════════════════════════════
    SECTION 9: PARTICLES BACKGROUND ANIMATION
-   Creates floating romantic particles in the background
    ═══════════════════════════════════════════════════════════ */
 
 (function initParticles() {
@@ -755,7 +739,7 @@ function initAgeModal() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SECTION 11: THEME MANAGEMENT (Dark/Light + Custom Colors)
+   SECTION 11: THEME MANAGEMENT
    ═══════════════════════════════════════════════════════════ */
 
 function initTheme() {
@@ -927,7 +911,6 @@ function renderQuestion() {
   if (dom.questionText) dom.questionText.textContent = q.text;
   if (dom.questionEmoji) dom.questionEmoji.textContent = "💕";
 
-  // Create two image cards for options A and B
   if (dom.answerContainer) {
     dom.answerContainer.innerHTML = `
       <div class="answer-grid-images">
@@ -949,7 +932,6 @@ function renderQuestion() {
       </div>
     `;
 
-    // Add click event listeners to answer cards
     const cards = dom.answerContainer.querySelectorAll('.answer-card');
     cards.forEach(card => {
       card.addEventListener('click', () => {
@@ -966,7 +948,6 @@ function renderQuestion() {
     dom.reactionPop.textContent = "";
   }
 
-  // Handle timer mode display
   if (state.timerMode && dom.timerBar) {
     dom.timerBar.style.display = "block";
     if (dom.timerFill) dom.timerFill.style.width = "100%";
@@ -976,16 +957,10 @@ function renderQuestion() {
   }
 }
 
-/**
- * Handles user answer selection with smooth animation
- * @param {string} chosen - 'A' or 'B'
- * @param {HTMLElement} cardElement - The clicked card element
- */
 function handleAnswer(chosen, cardElement) {
   const q = state.questions[state.currentIndex];
   clearTimer();
 
-  // Disable both cards to prevent double-clicking
   const allCards = document.querySelectorAll('.answer-card');
   allCards.forEach(card => {
     card.classList.add('disabled');
@@ -993,7 +968,6 @@ function handleAnswer(chosen, cardElement) {
   
   if (cardElement) cardElement.classList.add('selected');
 
-  // Show reaction emoji
   const reactionList = q.reactions || ["❤️", "💖"];
   const reaction = reactionList[chosen === "A" ? 0 : 1];
   if (dom.reactionPop) {
@@ -1001,7 +975,6 @@ function handleAnswer(chosen, cardElement) {
     dom.reactionPop.classList.add("show");
   }
 
-  // Save answer to state
   state.answers.push({
     question: q.text,
     chosen,
@@ -1015,7 +988,6 @@ function handleAnswer(chosen, cardElement) {
   playSfx(dom.sfxClick);
   saveProgress();
 
-  // Animate card exit
   setTimeout(() => {
     if (dom.reactionPop) dom.reactionPop.classList.remove("show");
     if (dom.questionCard) {
@@ -1026,7 +998,6 @@ function handleAnswer(chosen, cardElement) {
       dom.questionCard.style.opacity = "0";
     }
 
-    // Move to next question or end game
     setTimeout(() => {
       state.currentIndex++;
       if (dom.questionCard) {
@@ -1039,7 +1010,6 @@ function handleAnswer(chosen, cardElement) {
         endGame();
       } else {
         renderQuestion();
-        // Animate card entrance
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             if (dom.questionCard) {
@@ -1198,7 +1168,6 @@ function buildResults() {
 
   if (dom.resultsName) dom.resultsName.textContent = `${state.playerName}'s Romantic Profile`;
 
-  // Animate score counter
   let displayed = 0;
   const target = score;
   const step = Math.ceil(target / 60);
@@ -1208,7 +1177,6 @@ function buildResults() {
     if (displayed >= target) clearInterval(tick);
   }, 25);
 
-  // Animate score ring
   const circumference = 314;
   const offset = circumference - (score / 100) * circumference;
   const svg = dom.ringFill ? dom.ringFill.closest("svg") : null;
@@ -1225,7 +1193,6 @@ function buildResults() {
     setTimeout(() => { if (dom.ringFill) dom.ringFill.style.strokeDashoffset = offset; }, 200);
   }
 
-  // Display personality tag
   if (dom.personalityTag) {
     dom.personalityTag.innerHTML = `
       <strong>${personality.label}</strong><br/>
@@ -1233,7 +1200,6 @@ function buildResults() {
     `;
   }
 
-  // Display answers summary
   if (dom.answersSummary) {
     dom.answersSummary.innerHTML = state.answers.map((a, i) => `
       <div class="answer-item">
@@ -1409,16 +1375,15 @@ function launchConfetti() {
    ═══════════════════════════════════════════════════════════ */
 
 function init() {
-  initPinSystem();      // PIN verification first
-  initAgeModal();       // Age verification
-  initTheme();          // Color theme setup
-  initMusic();          // Music player setup
-  initLanding();        // Landing page setup
-  initGameControls();   // Game button controls
-  initSwipe();          // Mobile swipe support
-  initResultsActions(); // Results page actions
+  initPinSystem();
+  initAgeModal();
+  initTheme();
+  initMusic();
+  initLanding();
+  initGameControls();
+  initSwipe();
+  initResultsActions();
   showPage("landingPage");
 }
 
-// Start the application when DOM is ready
 document.addEventListener("DOMContentLoaded", init);
