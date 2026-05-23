@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   THIS OR THAT · Premium Romantic Game · script.js
+   THIS OR THAT · Premium Fun Game · script.js
    WITH PIN LOGIN SYSTEM (10 Random Secure PINs)
    ═══════════════════════════════════════════════════════════ */
 
